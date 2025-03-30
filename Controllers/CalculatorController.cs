@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace CalculatorService.Controllers
@@ -11,99 +12,119 @@ namespace CalculatorService.Controllers
     [ApiController]
     public class CalculatorController : ControllerBase
     {
-        [HttpGet("add")]
-        public IActionResult Add(int num1, int num2)
+        private bool IsNumeric(string input)
         {
-            if (num1 == 0) return BadRequest("Num1 is required");
-            if (num2 == 0) return BadRequest("Num2 is required");
+            return Regex.IsMatch(input, "^\\d+$");
+        }
+
+        [HttpGet("add")]
+        public IActionResult Add(string num1, string num2)
+        {
+            if (!IsNumeric(num1) || !IsNumeric(num2)) return BadRequest("Invalid input. Only numeric values are allowed.");
 
             try
             {
+                int n1 = int.Parse(num1);
+                int n2 = int.Parse(num2);
+
                 checked
                 {
-                    return Ok(num1 + num2);
+                    return Ok(n1 + n2);
                 }
             }
             catch (OverflowException)
             {
-                return BadRequest("Overflow error occurred while adding numbers");
+                return BadRequest("An error occurred while performing the addition.");
             }
         }
 
         [HttpGet("sub")]
-        public IActionResult Sub(int num1, int num2)
+        public IActionResult Sub(string num1, string num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
+            if (!IsNumeric(num1) || !IsNumeric(num2)) return BadRequest("Invalid input. Only numeric values are allowed.");
 
             try
             {
+                int n1 = int.Parse(num1);
+                int n2 = int.Parse(num2);
+
                 checked
                 {
-                    return Ok(num1 - num2);
+                    return Ok(n1 - n2);
                 }
             }
             catch (OverflowException)
             {
-                return BadRequest("Overflow error occurred while subtracting numbers");
+                return BadRequest("An error occurred while performing the subtraction.");
             }
         }
 
         [HttpGet("multiply")]
-        public IActionResult Multiply(int num1, int num2)
+        public IActionResult Multiply(string num1, string num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
+            if (!IsNumeric(num1) || !IsNumeric(num2)) return BadRequest("Invalid input. Only numeric values are allowed.");
 
             try
             {
+                int n1 = int.Parse(num1);
+                int n2 = int.Parse(num2);
+
                 checked
                 {
-                    long result = num1 * num2;
+                    long result = n1 * n2;
                     return Ok(result);
                 }
             }
             catch (OverflowException)
             {
-                return BadRequest("Overflow error occurred while multiplying numbers");
+                return BadRequest("An error occurred while performing the multiplication.");
             }
         }
 
         [HttpGet("divide")]
-        public IActionResult Divide(int num1, int num2)
+        public IActionResult Divide(string num1, string num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Division by zero is not allowed");
+            if (!IsNumeric(num1) || !IsNumeric(num2)) return BadRequest("Invalid input. Only numeric values are allowed.");
 
             try
             {
-                return Ok(num1 / num2);
+                int n1 = int.Parse(num1);
+                int n2 = int.Parse(num2);
+                if (n2 == 0) return BadRequest("Division by zero is not allowed.");
+
+                return Ok(n1 / n2);
             }
-            catch (DivideByZeroException)
+            catch (Exception)
             {
-                return BadRequest("Division operation failed");
+                return BadRequest("An error occurred while performing the division.");
             }
         }
 
         [HttpGet("factorial")]
-        public IActionResult Factorial(int n)
+        public IActionResult Factorial(string n)
         {
-            if (n < 0)
-            {
-                return BadRequest("Factorial is not defined for negative numbers");
-            }
-            if (n > 20)
-            {
-                return BadRequest("Factorial input too large and can cause overflow");
-            }
+            if (!IsNumeric(n) || long.Parse(n) < 0) return BadRequest("Invalid input. Only positive numeric values are allowed.");
 
-            long result = 1;
-            for (int i = 1; i <= n; i++)
+            try
             {
-                result *= i;
-            }
+                int num = int.Parse(n);
+                if (num > 20)
+                {
+                    return BadRequest("Input too large. Please try a smaller number.");
+                }
 
-            return Ok(result);
+                long result = 1;
+                for (int i = 1; i <= num; i++)
+                {
+                    result *= i;
+                }
+
+                return Ok(result);
+            }
+            catch (Exception)
+            {
+                return BadRequest("An error occurred while calculating the factorial.");
+            }
         }
     }
 }

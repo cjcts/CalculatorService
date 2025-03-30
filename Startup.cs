@@ -46,6 +46,18 @@ namespace CalculatorService
             else
             {
                 app.UseHsts();
+                // Disable Swagger in production environments
+                app.Use(async (context, next) =>
+                {
+                    if (context.Request.Path.StartsWithSegments("/swagger"))
+                    {
+                        context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        await context.Response.WriteAsync("Swagger is disabled in production.");
+                        return;
+                    }
+
+                    await next();
+                });
             }
 
             app.UseHttpsRedirection();
