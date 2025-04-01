@@ -12,9 +12,9 @@ namespace CalculatorService.Controllers
     [ApiController]
     public class CalculatorController : ControllerBase
     {
-        private bool IsNumeric(string inp)
+        private bool IsNumeric(string input)
         {
-            return Regex.IsMatch(inp, "^\\d+$");
+            return Regex.IsMatch(input, "^\\d+$");
         }
 
         [HttpGet("add")]
