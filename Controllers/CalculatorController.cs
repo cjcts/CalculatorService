@@ -60,6 +60,7 @@ namespace CalculatorService.Controllers
         {
             if (n <= 1)
                 return Ok(1);
+
             
             return Ok(n * Factorial(n - 1).Value);
         }
