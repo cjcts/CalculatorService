@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace CalculatorService.Controllers
@@ -12,56 +12,100 @@ namespace CalculatorService.Controllers
     public class CalculatorController : ControllerBase
     {
         [HttpGet("add")]
-        public IActionResult Add(int num1, int num2)
+        public IActionResult Add([FromQuery] int num1, [FromQuery] int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required");
-            if (num2 == 0) return BadRequest("Num2 is required");
-            
+            if (!ModelState.IsValid)
+                return BadRequest("Invalid input.");
+
             try
             {
                 return Ok(num1 + num2);
             }
-            catch
+            catch (OverflowException)
             {
-                return StatusCode(500, "An error occurred");
+                return StatusCode(500, "Overflow error occurred while adding.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
             }
         }
 
         [HttpGet("sub")]
-        public IActionResult Sub(int num1, int num2)
+        public IActionResult Sub([FromQuery] int num1, [FromQuery] int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-            
+            if (!ModelState.IsValid)
+                return BadRequest("Invalid input.");
+
             return Ok(num1 - num2);
         }
 
         [HttpGet("multiply")]
-        public IActionResult Multiply(int num1, int num2)
+        public IActionResult Multiply([FromQuery] int num1, [FromQuery] int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-            
-            long result = (long)num1 * (long)num2;
-            return Ok(result);
+            if (!ModelState.IsValid)
+                return BadRequest("Invalid input.");
+
+            try
+            {
+                BigInteger result = (BigInteger)num1 * (BigInteger)num2;
+                return Ok(result);
+            }
+            catch (OverflowException)
+            {
+                return StatusCode(500, "Overflow error occurred while multiplying.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
         }
 
         [HttpGet("divide")]
-        public IActionResult Divide(int num1, int num2)
+        public IActionResult Divide([FromQuery] int num1, [FromQuery] int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            return Ok(num1 / num2);
+            if (num2 == 0)
+                return BadRequest("Division by zero is not allowed.");
+            
+            try
+            {
+                return Ok(num1 / num2);
+            }
+            catch (DivideByZeroException)
+            {
+                return BadRequest("Cannot divide by zero.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
         }
-        
-        [HttpGet("factorial")]
-        public IActionResult Factorial(int n)
-        {
-            if (n <= 1)
-                return Ok(1);
 
-            return Ok(n * Factorial(n - 1).Value);
+        [HttpGet("factorial")]
+        public IActionResult Factorial([FromQuery] int n)
+        {
+            if (n < 0)
+                return BadRequest("Factorial of a negative number is not defined.");
+
+            try
+            {
+                BigInteger result = ComputeFactorial(n);
+                return Ok(result);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
+        }
+
+        private BigInteger ComputeFactorial(int n)
+        {
+            BigInteger result = 1;
+            for (int i = 1; i <= n; i++)
+            {
+                result *= i;
+            }
+            return result;
         }
     }
 }
