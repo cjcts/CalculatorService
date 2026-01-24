@@ -16,7 +16,7 @@ namespace CalculatorService.Controllers
         {
             if (num1 == 0) return BadRequest("Num1 is required");
             if (num2 == 0) return BadRequest("Num2 is required");
-            
+
             try
             {
                 return Ok(num1 + num2);
