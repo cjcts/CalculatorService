@@ -1,9 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CalculatorService.Controllers
 {
@@ -31,7 +27,7 @@ namespace CalculatorService.Controllers
         {
             if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
             if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-            
+
             return Ok(num1 - num2);
         }
 
@@ -40,7 +36,7 @@ namespace CalculatorService.Controllers
         {
             if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
             if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-            
+
             long result = (long)num1 * (long)num2;
             return Ok(result);
         }
@@ -52,15 +48,6 @@ namespace CalculatorService.Controllers
             if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
 
             return Ok(num1 / num2);
-        }
-        
-        [HttpGet("factorial")]
-        public IActionResult Factorial(int n)
-        {
-            if (n <= 1)
-                return Ok(1);
-
-            return Ok(n * Factorial(n - 1).Value);
         }
     }
 }
