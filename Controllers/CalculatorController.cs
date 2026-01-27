@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,18 +12,32 @@ namespace CalculatorService.Controllers
     [ApiController]
     public class CalculatorController : ControllerBase
     {
+        private readonly ILogger<CalculatorController> _logger;
+        private const int MAX_FACTORIAL = 20; // Prevent DoS via stack overflow/recursion & int64 overflow
+
+        public CalculatorController(ILogger<CalculatorController> logger)
+        {
+            _logger = logger;
+        }
+
         [HttpGet("add")]
         public IActionResult Add(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required");
-            if (num2 == 0) return BadRequest("Num2 is required");
-            
             try
             {
-                return Ok(num1 + num2);
+                checked
+                {
+                    return Ok(num1 + num2);
+                }
             }
-            catch
+            catch (OverflowException ex)
             {
+                _logger.LogWarning(ex, "Integer overflow on add request");
+                return BadRequest("Overflow occurred: numbers too large.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error in Add");
                 return StatusCode(500, "An error occurred");
             }
         }
@@ -30,38 +45,94 @@ namespace CalculatorService.Controllers
         [HttpGet("sub")]
         public IActionResult Sub(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-            
-            return Ok(num1 - num2);
+            try
+            {
+                checked
+                {
+                    return Ok(num1 - num2);
+                }
+            }
+            catch (OverflowException ex)
+            {
+                _logger.LogWarning(ex, "Integer overflow on sub request");
+                return BadRequest("Overflow occurred: numbers too large.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error in Sub");
+                return StatusCode(500, "An error occurred");
+            }
         }
 
         [HttpGet("multiply")]
         public IActionResult Multiply(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-            
-            long result = (long)num1 * (long)num2;
-            return Ok(result);
+            try
+            {
+                checked
+                {
+                    long result = (long)num1 * (long)num2;
+                    if (result > int.MaxValue || result < int.MinValue)
+                        throw new OverflowException();
+                    return Ok(result);
+                }
+            }
+            catch (OverflowException ex)
+            {
+                _logger.LogWarning(ex, "Integer overflow on multiply request");
+                return BadRequest("Overflow occurred: numbers too large.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error in Multiply");
+                return StatusCode(500, "An error occurred");
+            }
         }
 
         [HttpGet("divide")]
         public IActionResult Divide(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            return Ok(num1 / num2);
+            if (num2 == 0)
+            {
+                return BadRequest("Division by zero is not allowed.");
+            }
+            try
+            {
+                return Ok((double)num1 / num2);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error in Divide");
+                return StatusCode(500, "An error occurred");
+            }
         }
-        
+
         [HttpGet("factorial")]
         public IActionResult Factorial(int n)
         {
-            if (n <= 1)
-                return Ok(1);
+            if (n < 0)
+                return BadRequest("Factorial is not defined for negative numbers.");
+            if (n > MAX_FACTORIAL)
+                return BadRequest($"n is too large. Maximum allowed is {MAX_FACTORIAL} to avoid overflows.");
+            try
+            {
+                return Ok(FactorialIter(n));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unhandled error in Factorial");
+                return StatusCode(500, "An error occurred");
+            }
+        }
 
-            return Ok(n * Factorial(n - 1).Value);
+        private static long FactorialIter(int n)
+        {
+            long result = 1;
+            for (int i = 2; i <= n; i++)
+            {
+                result = checked(result * i);
+            }
+            return result;
         }
     }
 }
