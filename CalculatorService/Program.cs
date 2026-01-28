@@ -1,4 +1,3 @@
-
 namespace CalculatorService
 {
     public class Program
@@ -9,7 +8,10 @@ namespace CalculatorService
 
             // Add services to the container.
 
-            builder.Services.AddControllers();
+            builder.Services.AddControllers(options =>
+            {
+                options.SuppressModelStateInvalidFilter = false;
+            });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
@@ -25,8 +27,13 @@ namespace CalculatorService
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            // Secure by enforcing HSTS in non-development environments
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseHsts();
+            }
 
+            app.UseAuthorization();
 
             app.MapControllers();
 
