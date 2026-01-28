@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
 
 namespace CalculatorService.Controllers
 {
@@ -10,13 +11,19 @@ namespace CalculatorService.Controllers
         [HttpGet("add")]
         public IActionResult Add(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required");
-            if (num2 == 0) return BadRequest("Num2 is required");
+            // Validate against overflow/underflow
             try
             {
-                return Ok(num1 + num2);
+                checked
+                {
+                    return Ok(num1 + num2);
+                }
             }
-            catch
+            catch (OverflowException)
+            {
+                return BadRequest("Input values are too large/small and caused an overflow.");
+            }
+            catch (Exception)
             {
                 return StatusCode(500, "An error occurred");
             }
@@ -25,29 +32,70 @@ namespace CalculatorService.Controllers
         [HttpGet("sub")]
         public IActionResult Sub(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            return Ok(num1 - num2);
+            try
+            {
+                checked
+                {
+                    return Ok(num1 - num2);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Input values are too large/small and caused an overflow.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred");
+            }
         }
 
         [HttpGet("multiply")]
         public IActionResult Multiply(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            long result = (long)num1 * (long)num2;
-            return Ok(result);
+            try
+            {
+                checked
+                {
+                    long result = (long)num1 * (long)num2;
+                    return Ok(result);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Input values are too large/small and caused an overflow.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred");
+            }
         }
 
         [HttpGet("divide")]
         public IActionResult Divide(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            return Ok(num1 / num2);
+            if (num2 == 0)
+            {
+                return BadRequest("Division by zero is not allowed.");
+            }
+            try
+            {
+                checked
+                {
+                    return Ok(num1 / num2);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Input values are too large/small and caused an overflow.");
+            }
+            catch (DivideByZeroException)
+            {
+                return BadRequest("Division by zero is not allowed.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An error occurred");
+            }
         }
     }
 }
