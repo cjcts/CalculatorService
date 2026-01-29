@@ -10,12 +10,21 @@ namespace CalculatorService.Controllers
         [HttpGet("add")]
         public IActionResult Add(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required");
-            if (num2 == 0) return BadRequest("Num2 is required");
+            // Validate input range to prevent overflow
+            if (!ModelState.IsValid) return BadRequest("Invalid input.");
+            if (!IsValidInput(num1) || !IsValidInput(num2))
+                return BadRequest("Input numbers must be between -1000000 and 1000000.");
+
             try
             {
-            
-                return Ok(num1 + num2);
+                checked // Ensure overflow checking
+                {
+                    return Ok(num1 + num2);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Overflow occurred due to large/small values.");
             }
             catch
             {
@@ -26,29 +35,87 @@ namespace CalculatorService.Controllers
         [HttpGet("sub")]
         public IActionResult Sub(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
+            if (!ModelState.IsValid) return BadRequest("Invalid input.");
+            if (!IsValidInput(num1) || !IsValidInput(num2))
+                return BadRequest("Input numbers must be between -1000000 and 1000000.");
 
-            return Ok(num1 - num2);
+            try
+            {
+                checked
+                {
+                    return Ok(num1 - num2);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Overflow occurred due to large/small values.");
+            }
+            catch
+            {
+                return StatusCode(500, "An error occurred");
+            }
         }
 
         [HttpGet("multiply")]
         public IActionResult Multiply(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
+            if (!ModelState.IsValid) return BadRequest("Invalid input.");
+            if (!IsValidInput(num1) || !IsValidInput(num2))
+                return BadRequest("Input numbers must be between -1000000 and 1000000.");
 
-            long result = (long)num1 * (long)num2;
-            return Ok(result);
+            try
+            {
+                checked
+                {
+                    long result = (long)num1 * (long)num2;
+                    if (result > int.MaxValue || result < int.MinValue)
+                        return BadRequest("Result overflow. Try smaller numbers.");
+                    return Ok(result);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Overflow occurred due to large/small values.");
+            }
+            catch
+            {
+                return StatusCode(500, "An error occurred");
+            }
         }
 
         [HttpGet("divide")]
         public IActionResult Divide(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
+            if (!ModelState.IsValid) return BadRequest("Invalid input.");
+            if (!IsValidInput(num1) || !IsValidInput(num2))
+                return BadRequest("Input numbers must be between -1000000 and 1000000.");
+            if (num2 == 0)
+                return BadRequest("Division by zero is not allowed.");
 
-            return Ok(num1 / num2);
+            try
+            {
+                return Ok(num1 / num2);
+            }
+            catch (DivideByZeroException)
+            {
+                return BadRequest("Division by zero is not allowed.");
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Overflow occurred due to large/small values.");
+            }
+            catch
+            {
+                return StatusCode(500, "An error occurred");
+            }
+        }
+
+        /// <summary>
+        /// Validate input numbers to avoid possible int overflows and logic issues.
+        /// </summary>
+        private bool IsValidInput(int num)
+        {
+            return num >= -1000000 && num <= 1000000;
         }
     }
 }
