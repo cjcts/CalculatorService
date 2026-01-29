@@ -10,11 +10,19 @@ namespace CalculatorService.Controllers
         [HttpGet("add")]
         public IActionResult Add(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required");
-            if (num2 == 0) return BadRequest("Num2 is required");
+            if (!ModelState.IsValid) return BadRequest("Invalid input");
+            if (!ValidateNums(num1, num2, out IActionResult errorResult)) return errorResult;
+
             try
             {
-                return Ok(num1 + num2);
+                checked 
+                {
+                    return Ok(num1 + num2);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Addition results in overflow");
             }
             catch
             {
@@ -25,29 +33,83 @@ namespace CalculatorService.Controllers
         [HttpGet("sub")]
         public IActionResult Sub(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            return Ok(num1 - num2);
+            if (!ModelState.IsValid) return BadRequest("Invalid input");
+            if (!ValidateNums(num1, num2, out IActionResult errorResult)) return errorResult;
+            try
+            {
+                checked 
+                {
+                    return Ok(num1 - num2);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Subtraction results in overflow");
+            }
         }
 
         [HttpGet("multiply")]
         public IActionResult Multiply(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
-
-            long result = (long)num1 * (long)num2;
-            return Ok(result);
+            if (!ModelState.IsValid) return BadRequest("Invalid input");
+            if (!ValidateNums(num1, num2, out IActionResult errorResult)) return errorResult;
+            try
+            {
+                checked
+                {
+                    long result = (long)num1 * (long)num2;
+                    if (result > int.MaxValue || result < int.MinValue)
+                        return BadRequest("Multiplication results in overflow");
+                    return Ok(result);
+                }
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Multiplication results in overflow");
+            }
         }
 
         [HttpGet("divide")]
         public IActionResult Divide(int num1, int num2)
         {
-            if (num1 == 0) return BadRequest("Num1 is required and cannot be zero");
-            if (num2 == 0) return BadRequest("Num2 is required and cannot be zero");
+            if (!ModelState.IsValid) return BadRequest("Invalid input");
+            if (!ValidateNums(num1, num2, out IActionResult errorResult)) return errorResult;
+            if (num2 == 0)
+            {
+                return BadRequest("Divide by zero is not allowed");
+            }
+            try
+            {
+                checked
+                {
+                    return Ok(num1 / num2);
+                }
+            }
+            catch (DivideByZeroException)
+            {
+                return BadRequest("Divide by zero is not allowed");
+            }
+            catch (OverflowException)
+            {
+                return BadRequest("Division results in overflow");
+            }
+        }
 
-            return Ok(num1 / num2);
+        private bool ValidateNums(int num1, int num2, out IActionResult errorResult)
+        {
+            // Example validation for bounds. Could be more strict as needed for app context
+            if (num1 > int.MaxValue || num1 < int.MinValue)
+            {
+                errorResult = BadRequest("Num1 out of bounds");
+                return false;
+            }
+            if (num2 > int.MaxValue || num2 < int.MinValue)
+            {
+                errorResult = BadRequest("Num2 out of bounds");
+                return false;
+            }
+            errorResult = null;
+            return true;
         }
     }
 }
